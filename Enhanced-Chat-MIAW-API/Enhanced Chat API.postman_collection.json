@@ -1,0 +1,846 @@
+{
+	"info": {
+		"_postman_id": "cb140383-df4a-4baa-b58f-c46007377809",
+		"name": "Enhanced Chat API",
+		"description": "This collection provides a complete workflow for testing and interacting with the [Salesforce Enhanced Chat API](https://developer.salesforce.com/docs/service/messaging-api/overview). It handles guest authentication, creates a conversation, sends/receives messages, and uploads files.\n\n**Crucial Setup:** Before starting, set up a Postman Environment variables with your Salesforce credentials:\n\n- `{{orgId}}`: Your 15-character Salesforce Org ID.\n    \n- `{{esDeveloperName}}`: The API name of your Embedded Service Deployment.\n    \n- `{{scrt-url}}`: The unique base URL from your Salesforce snippet.\n    \n\nAnd make sure your collection is using the correct environment variable set. Refer to the screenshot below:\n\n<img src=\"https://content.pstmn.io/7cb12f1c-98ec-4ea3-9b59-97ceb674de40/U2NyZWVuc2hvdCAyMDI1LTExLTA2IGF0IDYuNDguNTHigK9BTS5wbmc=\" width=\"616\" height=\"483\">\n\nTo run the test after you have set the initial variables, please follow:\n\n1. **Get Token** for Unauthenticated Chat Session\n    \n2. Subscribe to **SSE Connect** (if you want)\n    \n3. **Create Conversation** This will create a messaging session in your org.\n    \n4. **Send a message**.\n    \n    1. Make sure to type your own message in body:  \n        `\"staticContent\": { \"formatType\": \"Text\", \"text\": \"YOUR MESSAGE\" }`\n        \n5. **Get Messaging Session / Conversation Entries** This request has a Chat History UI under Visualization Tab for easy readable view:\n    \n\n<img src=\"https://content.pstmn.io/22b4b20f-3bc8-4ebd-921b-8ab1a4205cc5/U2NyZWVuc2hvdCAyMDI1LTExLTA2IGF0IDYuNTYuMDPigK9BTS5wbmc=\">\n\n6\\. **Send File** -> To send a file follow the steps:\n\n- Upload the file in Body's File row\n    \n- Set the Environment variable - \"fileUpload_Name\" with your exact file name with extension.\n    \n\n7\\. **Close the Conversation** from EndUser side.\n\nFor More information please refer to the [official documentation](https://developer.salesforce.com/docs/service/messaging-api/overview).\n\nFor any changes or explanation or suggestions, please reach out to Lakshay Bajargaan.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15020437",
+		"_collection_link": "https://digital-engagement-amer.postman.co/workspace/Team-Workspace~d226ceca-c1ed-4c25-8a5f-b5a577e0d0b7/collection/15020437-cb140383-df4a-4baa-b58f-c46007377809?action=share&source=collection_link&creator=15020437"
+	},
+	"item": [
+		{
+			"name": "Get Token for Auth User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// This script runs *after* the request is successful (Status 200)",
+							"",
+							"if (pm.response.code === 200) {",
+							"    try {",
+							"        const responseJson = pm.response.json();",
+							"        ",
+							"        // --- 1. Save the Access Token ---",
+							"        const accessToken = responseJson.accessToken;",
+							"        if (accessToken) {",
+							"            pm.environment.set(\"accessToken\", `Bearer ${accessToken}`);",
+							"            console.log(\"Access Token saved to environment.\");",
+							"        } else {",
+							"            console.error(\"Could not find 'accessToken' in response.\");",
+							"            throw new Error(\"Missing accessToken, stopping collection run.\"); // Stop if token is missing",
+							"        }",
+							"",
+							"        // --- 2. Save the Last Event ID ---",
+							"        const lastEventId = responseJson.lastEventId;",
+							"        if (lastEventId) {",
+							"            pm.environment.set(\"lastEventId\", lastEventId);",
+							"            console.log(\"Last Event ID saved to environment.\");",
+							"        } else {",
+							"            console.warn(\"Could not find 'lastEventId' in response.\");",
+							"        }",
+							"",
+							"        // --- 3. Save the Allowed File Types ---",
+							"        const allowedTypes = responseJson?.context?.configuration?.embeddedServiceConfig?.attachments?.allowedFileTypes;",
+							"",
+							"        if (allowedTypes) {",
+							"            pm.environment.set(\"allowedFileTypesConfig\", JSON.stringify(allowedTypes));",
+							"            console.log(\"Successfully saved 'allowedFileTypesConfig' environment variable.\");",
+							"        } else {",
+							"            console.warn(\"Could not find 'allowedFileTypes' object in response.\");",
+							"        }",
+							"        ",
+							"        // --- 4. Set the next request to run ---",
+							"        // IMPORTANT: Replace \"Create Conversation\" with the exact name of your next request.",
+							"        const nextRequestName = \"Create Conversation\"; // Define next request name",
+							"        postman.setNextRequest(nextRequestName);",
+							"        console.log(`Token received. Moving to '${nextRequestName}'...`);",
+							"",
+							"    } catch (e) {",
+							"        console.error(\"Failed to parse JSON response or set next request:\", e);",
+							"        postman.setNextRequest(null); // Stop the collection run on error",
+							"    }",
+							"} else {",
+							"    console.warn(\"Request did not return a 200 OK. Token not saved.\");",
+							"    // Stop the collection from running any further",
+							"    postman.setNextRequest(null);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"orgId\": \"{{orgId}}\",\n    \"esDeveloperName\": \"{{esDeveloperName}}\",\n    \"capabilitiesVersion\": \"63\",\n    \"platform\": \"Web\",\n    \"deviceId\": null,\n    \"context\": {\n        \"appName\": \"com_acme_sales\",\n        \"clientVersion\": \"1.2.3\"\n    },\n    \"authorizationType\": \"JWT\",\n    \"customerIdentityToken\": \"{{YOUR_JWT-Token}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/authorization/authenticated/access-token",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"authorization",
+						"authenticated",
+						"access-token"
+					]
+				},
+				"description": "## Endpoint Description\n\nThis endpoint is used to obtain an access token for authenticated users in the system. It is particularly useful for applications that need to interact with the service after user authentication has been established.\n\n### Request\n\n**Method:** POST  \n**URL:** `{{scrt-url}}/iamessage/api/v2/authorization/authenticated/access-token`\n\n#### Request Headers\n\n- **Content-Type:** `application/json`  \n    This header indicates that the request body is in JSON format.\n    \n\n#### Request Body\n\nThe request body must be a JSON object containing the following parameters:\n\n- **orgId** (string): The identifier for the organization requesting the access token.\n    \n- **esDeveloperName** (string): The name of the developer or application requesting access.\n    \n- **capabilitiesVersion** (string): The version of capabilities being requested.\n    \n- **platform** (string): The platform from which the request is made (e.g., \"Web\").\n    \n- **deviceId** (string or null): An optional identifier for the device making the request.\n    \n- **context** (object): An object containing additional context information.\n    \n    - **appName** (string): The name of the application making the request.\n        \n    - **clientVersion** (string): The version of the client application.\n        \n- **authorizationType** (string): The type of authorization being used (e.g., \"JWT\").\n    \n- **customerIdentityToken** (string): The JWT token representing the customer's identity.\n    \n\n#### Example Request Body\n\n``` json\n{\n  \"orgId\": \"{{orgId}}\",\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"capabilitiesVersion\": \"63\",\n  \"platform\": \"Web\",\n  \"deviceId\": null,\n  \"context\": {\n    \"appName\": \"com_acme_sales\",\n    \"clientVersion\": \"1.2.3\"\n  },\n  \"authorizationType\": \"JWT\",\n  \"customerIdentityToken\": \"{{YOUR_JWT-Token}}\"\n}\n\n ```\n\n### Instructions for Use\n\n1. **Configuration**: Ensure that you have the necessary organization ID and developer name. You will also need a valid JWT token for customer identity.\n    \n2. **Making the Request**: Use the POST method to send a request to the specified URL with the appropriate headers and body as described above.\n    \n3. **Authentication**: Include the JWT token in the request body to authenticate the user.\n    \n\n### Response\n\n**Status Code:** 200  \n**Content-Type:** `application/json`\n\nThe response will be a JSON object containing the following fields:\n\n- **accessToken** (string): The token that can be used for subsequent authenticated requests.\n    \n- **lastEventId** (string): The identifier for the last event processed.\n    \n- **context** (object): Contains contextual information related to the request.\n    \n    - **configuration** (object): Configuration settings for the embedded service.\n        \n        - **embeddedServiceConfig** (object): Configuration details for the embedded service.\n            \n            - **name** (string): The name of the embedded service.\n                \n            - **deploymentType** (string): The type of deployment.\n                \n            - **embeddedServiceMessagingChannel** (object): Messaging channel details.\n                \n                - **channelAddressIdentifier** (string): Identifier for the channel address.\n                    \n                - **authMode** (string): The authentication mode used.\n                    \n            - **forms** (array): An array of forms associated with the service.\n                \n            - **attachments** (object): Details about file attachments.\n                \n                - **endUserToAgent** (boolean): Indicates if end-user to agent attachments are allowed.\n                    \n                - **maxFileSize** (number): The maximum file size allowed for attachments.\n                    \n                - **allowedFileTypes** (object): Allowed file types categorized by type.\n                    \n            - **choiceListConfig** (object): Configuration for choice lists.\n                \n                - **choiceList** (array): An array of choices available.\n                    \n            - **transcript** (object): Transcript settings.\n                \n                - **allowTranscriptDownload** (boolean): Indicates if transcript downloads are allowed.\n                    \n    - **timestamp** (number): The timestamp of the response.\n        \n    - **deviceId** (string): The identifier for the device making the request.\n        \n    - **endUser** (object): Information about the end user.\n        \n        - **appType** (string): The type of application used by the end user.\n            \n        - **role** (string): The role of the end user.\n            \n        - **subject** (string): The subject identifier for the end user.\n            \n\n#### Example Response\n\n``` json\n{\n  \"accessToken\": \"\",\n  \"lastEventId\": \"\",\n  \"context\": {\n    \"configuration\": {\n      \"embeddedServiceConfig\": {\n        \"name\": \"\",\n        \"deploymentType\": \"\",\n        \"embeddedServiceMessagingChannel\": {\n          \"channelAddressIdentifier\": \"\",\n          \"authMode\": \"\"\n        },\n        \"forms\": [],\n        \"attachments\": {\n          \"endUserToAgent\": true,\n          \"maxFileSize\": 0,\n          \"allowedFileTypes\": {\n            \"text\": [\"\"],\n            \"image\": [\"\"],\n            \"other\": [\"\"],\n            \"video\": [],\n            \"audio\": []\n          }\n        },\n        \"choiceListConfig\": {\n          \"choiceList\": []\n        },\n        \"transcript\": {\n          \"allowTranscriptDownload\": true\n        }\n      },\n      \"timestamp\": 0\n    },\n    \"deviceId\": \"\",\n    \"endUser\": {\n      \"appType\": \"\",\n      \"role\": \"\",\n      \"subject\": \"\"\n    }\n  }\n}\n\n ```\n\nThis endpoint is used to obtain an access token for unauthenticated users in the system. It is particularly useful for applications that need to interact with the service without prior user authentication.\n\n### Request\n\n**Method:** POST  \n**URL:** `{{scrt-url}}/iamessage/api/v2/authorization/unauthenticated/access-token`\n\n#### Request Headers\n\n- **Content-Type:** `application/json`  \n    This header indicates that the request body is in JSON format.\n    \n\n#### Request Body\n\nThe request body must be a JSON object containing the following parameters:\n\n- **orgId** (string): The identifier for the organization requesting the access token.\n    \n- **esDeveloperName** (string): The name of the developer or application requesting access.\n    \n- **capabilitiesVersion** (string): The version of capabilities being requested.\n    \n- **platform** (string): The platform from which the request is made (e.g., \"Web\").\n    \n- **deviceId** (string or null): An optional identifier for the device making the request.\n    \n- **context** (object): An object containing additional context information.\n    \n    - **appName** (string): The name of the application making the request.\n        \n    - **clientVersion** (string): The version of the client application.\n        \n\n#### Example Request Body\n\n``` json\n{\n  \"orgId\": \"{{orgId}}\",\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"capabilitiesVersion\": \"63\",\n  \"platform\": \"Web\",\n  \"deviceId\": null,\n  \"context\": {\n    \"appName\": \"com_acme_sales\",\n    \"clientVersion\": \"1.2.3\"\n  }\n}\n\n ```\n\n### Response\n\n**Status Code:** 200  \n**Content-Type:** `application/json`\n\nThe response will be a JSON object containing the following fields:\n\n- **accessToken** (string): The token that can be used for subsequent authenticated requests.\n    \n- **lastEventId** (string): The identifier for the last event processed.\n    \n- **context** (object): Contains contextual information related to the request.\n    \n    - **configuration** (object): Configuration settings for the embedded service.\n        \n        - **embeddedServiceConfig** (object): Configuration details for the embedded service.\n            \n            - **name** (string): The name of the embedded service.\n                \n            - **deploymentType** (string): The type of deployment.\n                \n            - **embeddedServiceMessagingChannel** (object): Messaging channel details.\n                \n                - **channelAddressIdentifier** (string): Identifier for the channel address.\n                    \n                - **authMode** (string): The authentication mode used.\n                    \n            - **forms** (array): An array of forms associated with the service.\n                \n            - **attachments** (object): Details about file attachments.\n                \n                - **endUserToAgent** (boolean): Indicates if end-user to agent attachments are allowed.\n                    \n                - **maxFileSize** (number): The maximum file size allowed for attachments.\n                    \n                - **allowedFileTypes** (object): Allowed file types categorized by type.\n                    \n            - **choiceListConfig** (object): Configuration for choice lists.\n                \n                - **choiceList** (array): An array of choices available.\n                    \n            - **transcript** (object): Transcript settings.\n                \n                - **allowTranscriptDownload** (boolean): Indicates if transcript downloads are allowed.\n                    \n    - **timestamp** (number): The timestamp of the response.\n        \n    - **deviceId** (string): The identifier for the device making the request.\n        \n    - **endUser** (object): Information about the end user.\n        \n        - **appType** (string): The type of application used by the end user.\n            \n        - **role** (string): The role of the end user.\n            \n        - **subject** (string): The subject identifier for the end user.\n            \n\n#### Example Response\n\n``` json\n{\n  \"accessToken\": \"\",\n  \"lastEventId\": \"\",\n  \"context\": {\n    \"configuration\": {\n      \"embeddedServiceConfig\": {\n        \"name\": \"\",\n        \"deploymentType\": \"\",\n        \"embeddedServiceMessagingChannel\": {\n          \"channelAddressIdentifier\": \"\",\n          \"authMode\": \"\"\n        },\n        \"forms\": [],\n        \"attachments\": {\n          \"endUserToAgent\": true,\n          \"maxFileSize\": 0,\n          \"allowedFileTypes\": {\n            \"text\": [\"\"],\n            \"image\": [\"\"],\n            \"other\": [\"\"],\n            \"video\": [],\n            \"audio\": []\n          }\n        },\n        \"choiceListConfig\": {\n          \"choiceList\": []\n        },\n        \"transcript\": {\n          \"allowTranscriptDownload\": true\n        }\n      },\n      \"timestamp\": 0\n    },\n    \"deviceId\": \"\",\n    \"endUser\": {\n      \"appType\": \"\",\n      \"role\": \"\",\n      \"subject\": \"\"\n    }\n  }\n}\n\n ```"
+			},
+			"response": []
+		},
+		{
+			"name": "Revoke Auth Token",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/authorization/authenticated/access-token",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"authorization",
+						"authenticated",
+						"access-token"
+					]
+				},
+				"description": "Generated from cURL: curl \"https://{scrt-url}/iamessage/api/v2/authorization/authenticated/access-token\" \\\n  -X DELETE"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Token for Un-Auth User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// This script runs *after* the request is successful (Status 200)",
+							"",
+							"if (pm.response.code === 200) {",
+							"    try {",
+							"        const responseJson = pm.response.json();",
+							"        ",
+							"        // --- 1. Save the Access Token ---",
+							"        const accessToken = responseJson.accessToken;",
+							"        if (accessToken) {",
+							"            pm.environment.set(\"accessToken\", `Bearer ${accessToken}`);",
+							"            console.log(\"Access Token saved to environment.\");",
+							"        } else {",
+							"            console.error(\"Could not find 'accessToken' in response.\");",
+							"            throw new Error(\"Missing accessToken, stopping collection run.\"); // Stop if token is missing",
+							"        }",
+							"",
+							"        // --- 2. Save the Last Event ID ---",
+							"        const lastEventId = responseJson.lastEventId;",
+							"        if (lastEventId) {",
+							"            pm.environment.set(\"lastEventId\", lastEventId);",
+							"            console.log(\"Last Event ID saved to environment.\");",
+							"        } else {",
+							"            console.warn(\"Could not find 'lastEventId' in response.\");",
+							"        }",
+							"",
+							"        // --- 3. Save the Allowed File Types ---",
+							"        const allowedTypes = responseJson?.context?.configuration?.embeddedServiceConfig?.attachments?.allowedFileTypes;",
+							"",
+							"        if (allowedTypes) {",
+							"            pm.environment.set(\"allowedFileTypesConfig\", JSON.stringify(allowedTypes));",
+							"            console.log(\"Successfully saved 'allowedFileTypesConfig' environment variable.\");",
+							"        } else {",
+							"            console.warn(\"Could not find 'allowedFileTypes' object in response.\");",
+							"        }",
+							"        ",
+							"        // --- 4. Set the next request to run ---",
+							"        // IMPORTANT: Replace \"Create Conversation\" with the exact name of your next request.",
+							"        const nextRequestName = \"Create Conversation\"; // Define next request name",
+							"        postman.setNextRequest(nextRequestName);",
+							"        console.log(`Token received. Moving to '${nextRequestName}'...`);",
+							"",
+							"    } catch (e) {",
+							"        console.error(\"Failed to parse JSON response or set next request:\", e);",
+							"        postman.setNextRequest(null); // Stop the collection run on error",
+							"    }",
+							"} else {",
+							"    console.warn(\"Request did not return a 200 OK. Token not saved.\");",
+							"    // Stop the collection from running any further",
+							"    postman.setNextRequest(null);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"orgId\": \"{{orgId}}\",\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"capabilitiesVersion\": \"63\",\n  \"platform\": \"Web\",\n  \"deviceId\": null,\n  \"context\": {\n    \"appName\": \"com_acme_sales\",\n    \"clientVersion\": \"1.2.3\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/authorization/unauthenticated/access-token",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"authorization",
+						"unauthenticated",
+						"access-token"
+					]
+				},
+				"description": "## Endpoint Description\n\nThis endpoint is used to obtain an access token for unauthenticated users in the system. It is particularly useful for applications that need to interact with the service without prior user authentication.\n\n### Request\n\n**Method:** POST  \n**URL:** `{{scrt-url}}/iamessage/api/v2/authorization/unauthenticated/access-token`\n\n#### Request Headers\n\n- **Content-Type:** `application/json`  \n    This header indicates that the request body is in JSON format.\n    \n\n#### Request Body\n\nThe request body must be a JSON object containing the following parameters:\n\n- **orgId** (string): The identifier for the organization requesting the access token.\n    \n- **esDeveloperName** (string): The name of the developer or application requesting access.\n    \n- **capabilitiesVersion** (string): The version of capabilities being requested.\n    \n- **platform** (string): The platform from which the request is made (e.g., \"Web\").\n    \n- **deviceId** (string or null): An optional identifier for the device making the request.\n    \n- **context** (object): An object containing additional context information.\n    \n    - **appName** (string): The name of the application making the request.\n        \n    - **clientVersion** (string): The version of the client application.\n        \n\n#### Example Request Body\n\n``` json\n{\n  \"orgId\": \"{{orgId}}\",\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"capabilitiesVersion\": \"63\",\n  \"platform\": \"Web\",\n  \"deviceId\": null,\n  \"context\": {\n    \"appName\": \"com_acme_sales\",\n    \"clientVersion\": \"1.2.3\"\n  }\n}\n\n ```\n\n### Response\n\n**Status Code:** 200  \n**Content-Type:** `application/json`\n\nThe response will be a JSON object containing the following fields:\n\n- **accessToken** (string): The token that can be used for subsequent authenticated requests.\n    \n- **lastEventId** (string): The identifier for the last event processed.\n    \n- **context** (object): Contains contextual information related to the request.\n    \n    - **configuration** (object): Configuration settings for the embedded service.\n        \n        - **embeddedServiceConfig** (object): Configuration details for the embedded service.\n            \n            - **name** (string): The name of the embedded service.\n                \n            - **deploymentType** (string): The type of deployment.\n                \n            - **embeddedServiceMessagingChannel** (object): Messaging channel details.\n                \n                - **channelAddressIdentifier** (string): Identifier for the channel address.\n                    \n                - **authMode** (string): The authentication mode used.\n                    \n            - **forms** (array): An array of forms associated with the service.\n                \n            - **attachments** (object): Details about file attachments.\n                \n                - **endUserToAgent** (boolean): Indicates if end-user to agent attachments are allowed.\n                    \n                - **maxFileSize** (number): The maximum file size allowed for attachments.\n                    \n                - **allowedFileTypes** (object): Allowed file types categorized by type.\n                    \n            - **choiceListConfig** (object): Configuration for choice lists.\n                \n                - **choiceList** (array): An array of choices available.\n                    \n            - **transcript** (object): Transcript settings.\n                \n                - **allowTranscriptDownload** (boolean): Indicates if transcript downloads are allowed.\n                    \n    - **timestamp** (number): The timestamp of the response.\n        \n    - **deviceId** (string): The identifier for the device making the request.\n        \n    - **endUser** (object): Information about the end user.\n        \n        - **appType** (string): The type of application used by the end user.\n            \n        - **role** (string): The role of the end user.\n            \n        - **subject** (string): The subject identifier for the end user.\n            \n\n#### Example Response\n\n``` json\n{\n  \"accessToken\": \"\",\n  \"lastEventId\": \"\",\n  \"context\": {\n    \"configuration\": {\n      \"embeddedServiceConfig\": {\n        \"name\": \"\",\n        \"deploymentType\": \"\",\n        \"embeddedServiceMessagingChannel\": {\n          \"channelAddressIdentifier\": \"\",\n          \"authMode\": \"\"\n        },\n        \"forms\": [],\n        \"attachments\": {\n          \"endUserToAgent\": true,\n          \"maxFileSize\": 0,\n          \"allowedFileTypes\": {\n            \"text\": [\"\"],\n            \"image\": [\"\"],\n            \"other\": [\"\"],\n            \"video\": [],\n            \"audio\": []\n          }\n        },\n        \"choiceListConfig\": {\n          \"choiceList\": []\n        },\n        \"transcript\": {\n          \"allowTranscriptDownload\": true\n        }\n      },\n      \"timestamp\": 0\n    },\n    \"deviceId\": \"\",\n    \"endUser\": {\n      \"appType\": \"\",\n      \"role\": \"\",\n      \"subject\": \"\"\n    }\n  }\n}\n\n ```"
+			},
+			"response": []
+		},
+		{
+			"name": "Generate Continuation Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"packages": {},
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/authorization/continuation-access-token",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"authorization",
+						"continuation-access-token"
+					]
+				},
+				"description": "## Endpoint Description\n\nThis endpoint is used to obtain an access token for unauthenticated users in the system. It is particularly useful for applications that need to interact with the service without prior user authentication.\n\n### Request\n\n**Method:** POST  \n**URL:** `{{scrt-url}}/iamessage/api/v2/authorization/unauthenticated/access-token`\n\n#### Request Headers\n\n- **Content-Type:** `application/json`  \n    This header indicates that the request body is in JSON format.\n    \n\n#### Request Body\n\nThe request body must be a JSON object containing the following parameters:\n\n- **orgId** (string): The identifier for the organization requesting the access token.\n    \n- **esDeveloperName** (string): The name of the developer or application requesting access.\n    \n- **capabilitiesVersion** (string): The version of capabilities being requested.\n    \n- **platform** (string): The platform from which the request is made (e.g., \"Web\").\n    \n- **deviceId** (string or null): An optional identifier for the device making the request.\n    \n- **context** (object): An object containing additional context information.\n    \n    - **appName** (string): The name of the application making the request.\n        \n    - **clientVersion** (string): The version of the client application.\n        \n\n#### Example Request Body\n\n``` json\n{\n  \"orgId\": \"{{orgId}}\",\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"capabilitiesVersion\": \"63\",\n  \"platform\": \"Web\",\n  \"deviceId\": null,\n  \"context\": {\n    \"appName\": \"com_acme_sales\",\n    \"clientVersion\": \"1.2.3\"\n  }\n}\n\n ```\n\n### Response\n\n**Status Code:** 200  \n**Content-Type:** `application/json`\n\nThe response will be a JSON object containing the following fields:\n\n- **accessToken** (string): The token that can be used for subsequent authenticated requests.\n    \n- **lastEventId** (string): The identifier for the last event processed.\n    \n- **context** (object): Contains contextual information related to the request.\n    \n    - **configuration** (object): Configuration settings for the embedded service.\n        \n        - **embeddedServiceConfig** (object): Configuration details for the embedded service.\n            \n            - **name** (string): The name of the embedded service.\n                \n            - **deploymentType** (string): The type of deployment.\n                \n            - **embeddedServiceMessagingChannel** (object): Messaging channel details.\n                \n                - **channelAddressIdentifier** (string): Identifier for the channel address.\n                    \n                - **authMode** (string): The authentication mode used.\n                    \n            - **forms** (array): An array of forms associated with the service.\n                \n            - **attachments** (object): Details about file attachments.\n                \n                - **endUserToAgent** (boolean): Indicates if end-user to agent attachments are allowed.\n                    \n                - **maxFileSize** (number): The maximum file size allowed for attachments.\n                    \n                - **allowedFileTypes** (object): Allowed file types categorized by type.\n                    \n            - **choiceListConfig** (object): Configuration for choice lists.\n                \n                - **choiceList** (array): An array of choices available.\n                    \n            - **transcript** (object): Transcript settings.\n                \n                - **allowTranscriptDownload** (boolean): Indicates if transcript downloads are allowed.\n                    \n    - **timestamp** (number): The timestamp of the response.\n        \n    - **deviceId** (string): The identifier for the device making the request.\n        \n    - **endUser** (object): Information about the end user.\n        \n        - **appType** (string): The type of application used by the end user.\n            \n        - **role** (string): The role of the end user.\n            \n        - **subject** (string): The subject identifier for the end user.\n            \n\n#### Example Response\n\n``` json\n{\n  \"accessToken\": \"\",\n  \"lastEventId\": \"\",\n  \"context\": {\n    \"configuration\": {\n      \"embeddedServiceConfig\": {\n        \"name\": \"\",\n        \"deploymentType\": \"\",\n        \"embeddedServiceMessagingChannel\": {\n          \"channelAddressIdentifier\": \"\",\n          \"authMode\": \"\"\n        },\n        \"forms\": [],\n        \"attachments\": {\n          \"endUserToAgent\": true,\n          \"maxFileSize\": 0,\n          \"allowedFileTypes\": {\n            \"text\": [\"\"],\n            \"image\": [\"\"],\n            \"other\": [\"\"],\n            \"video\": [],\n            \"audio\": []\n          }\n        },\n        \"choiceListConfig\": {\n          \"choiceList\": []\n        },\n        \"transcript\": {\n          \"allowTranscriptDownload\": true\n        }\n      },\n      \"timestamp\": 0\n    },\n    \"deviceId\": \"\",\n    \"endUser\": {\n      \"appType\": \"\",\n      \"role\": \"\",\n      \"subject\": \"\"\n    }\n  }\n}\n\n ```"
+			},
+			"response": []
+		},
+		{
+			"name": "SSE Connect",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "text/event-stream",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					},
+					{
+						"key": "X-Org-Id",
+						"value": "{{orgId}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/eventrouter/v1/sse",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"eventrouter",
+						"v1",
+						"sse"
+					]
+				},
+				"description": "### API Endpoint: GET {{scrt-url}}/eventrouter/v1/sse\n\nThis endpoint is used to establish a Server-Sent Events (SSE) connection to receive real-time updates from the event router. It is designed to push event notifications to clients as they occur, allowing for immediate processing of events without the need for constant polling.\n\n#### Request Format\n\n- **Method**: GET\n    \n- **Request Body**: This endpoint does not require a request body. The connection is established via the URL parameters and headers.\n    \n\n#### Response Structure\n\nThe response from this endpoint will be a stream of events sent from the server. Each event will typically contain the following structure:\n\n- **event**: The type of event being sent.\n    \n- **data**: The payload of the event, which may include various details depending on the specific event type.\n    \n- **id**: An optional identifier for the event, which can be used to track or acknowledge events.\n    \n\nClients should be prepared to handle incoming events in real-time and process them accordingly. The connection remains open, and events will be sent as they occur until the connection is closed by either the client or the server."
+			},
+			"response": []
+		},
+		{
+			"name": "Create Conversation",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// This script runs *before* the request is sent",
+							"// It generates a new UUID (GUID) and saves it to the environment",
+							"pm.environment.set(\"conversationId\", pm.variables.replaceIn('{{$guid}}'));",
+							"",
+							"console.log(\"New conversationId generated and saved:\", pm.environment.get(\"conversationId\"));"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// This script runs *after* the request is successful",
+							"pm.test(\"Conversation was created successfully (Status 201)\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if(pm.response.code === 201) {",
+							"    console.log(\"Conversation created: \" + pm.environment.get(\"conversationId\"));",
+							"} else {",
+							"    console.error(\"Failed to create conversation. Check response body.\");",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"conversationId\": \"{{conversationId}}\",\n    \"routingAttributes\": {\n    /* \n       \"CaseId\": \"500W400000RNt14IAD\",\n        \"MVW_OwnerId\": \"UV#105456\",\n        \"firstName\": \"CARL\",\n        \"_lastName\": \"HOFFMAN\",\n        \"_email\": \"ed.hoffman@cox.net.fake\",\n        \"Phone\": \"7605227323\",\n        \"Amelia_Conv_Id\": \"MZGQEZLIISAAA\",\n        \"User_Operating_System\": \"Windows\",\n        \"Browser_Agent\": \"Chrome\",\n        \"QueueName\": \"MVC\"\n        */\n    },\n    \"esDeveloperName\": \"{{esDeveloperName}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation"
+					]
+				},
+				"description": "## API Endpoint: Create Conversation\n\nThis endpoint allows you to create a new conversation in the messaging system. It is designed to initiate a conversation based on the provided conversation ID and other routing attributes.\n\n### Request\n\n**Method:** POST  \n**URL:** `{{scrt-url}}/iamessage/api/v2/conversation`\n\n#### Request Body\n\nThe request body must be in JSON format and should include the following parameters:\n\n- **conversationId** (string): A unique identifier for the conversation you wish to create.\n    \n- **routingAttributes** (object): An object that can contain various attributes related to the routing of the conversation. This can be left as an empty object if no specific routing attributes are needed.\n    \n- **esDeveloperName** (string): The name of the developer or application initiating the conversation, used for identification purposes.\n    \n\n**Example Request Body:**\n\n``` json\n{\n  \"conversationId\": \"{{conversationId}}\",\n  \"routingAttributes\": {},\n  \"esDeveloperName\": \"Miaw_API_1\"\n}\n\n ```\n\n### Response\n\nUpon a successful request, the server will respond with:\n\n- **Status Code:** 201 (Created) - This indicates that the conversation has been successfully created.\n    \n- **Content-Type:** text/xml - The response will be in XML format, though the specific content of the response is not detailed in this documentation.\n    \n\n### Summary\n\nThis API call is essential for initiating conversations within the messaging system, allowing for the management and tracking of conversations through unique identifiers and routing attributes."
+			},
+			"response": []
+		},
+		{
+			"name": "Send Message",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// This script runs *before* the request is sent",
+							"// It generates a new UUID (GUID) for the message itself",
+							"pm.environment.set(\"newMessageId\", pm.variables.replaceIn('{{$guid}}'));",
+							"",
+							"console.log(\"New messageId generated for body:\", pm.environment.get(\"newMessageId\"));"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Message accepted (Status 202)\", function () {",
+							"    pm.response.to.have.status(202);",
+							"});",
+							"",
+							"if(pm.response.code === 202) {",
+							"    try {",
+							"        const responseJson = pm.response.json();",
+							"        ",
+							"        // The response is an array, get the first entry",
+							"        if (responseJson.conversationEntries && responseJson.conversationEntries.length > 0) {",
+							"            ",
+							"            const messageId = responseJson.conversationEntries[0].id;",
+							"            pm.environment.set(\"lastMessageId\", messageId);",
+							"            console.log(\"Salesforce message ID saved:\", messageId);",
+							"",
+							"        } else {",
+							"            console.error(\"Response did not contain 'conversationEntries'.\");",
+							"        }",
+							"        ",
+							"    } catch (e) {",
+							"        console.error(\"Failed to parse JSON response:\", e);",
+							"    }",
+							"} else {",
+							"    console.error(\"Failed to send message. Check response body.\");",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"message\": {\n //   \"inReplyToMessageId\": \"a133c185-73a7-4adf-b6d9-b7fd62babb4e\",\n    \"id\": \"{{newMessageId}}\",\n    \"messageType\": \"StaticContentMessage\",\n    \"staticContent\": {\n      \"formatType\": \"Text\",\n      \"text\": \"How are you?  \"\n    }\n  },\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"isNewMessagingSession\": false\n  //\"routingAttributes\": {},\n  //\"language\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/message",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation",
+						"{{conversationId}}",
+						"message"
+					]
+				},
+				"description": "## API Endpoint: Send Message to Conversation\n\nThis endpoint allows users to send a message to a specific conversation identified by `conversationId`. It is part of the messaging API and facilitates the addition of messages to ongoing conversations.\n\n### Request\n\n- **Method:** POST\n    \n- **URL:** `{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/message`\n    \n\n#### Request Body\n\nThe request body must be in JSON format and should include the following parameters:\n\n- **message** (object): Contains the details of the message being sent.\n    \n    - **id** (string): Unique identifier for the message.\n        \n    - **messageType** (string): Type of the message. In this case, it should be \"StaticContentMessage\".\n        \n    - **staticContent** (object): Holds the content of the message.\n        \n        - **formatType** (string): Format of the content, e.g., \"Text\".\n            \n        - **text** (string): The actual text content of the message.\n            \n- **esDeveloperName** (string): The name of the developer sending the message.\n    \n- **isNewMessagingSession** (boolean): Indicates whether this is a new messaging session. Set to `false` if it is a continuation of an existing session.\n    \n\n#### Example Request\n\n``` json\n{\n  \"message\": {\n    \"id\": \"{{newMessageId}}\",\n    \"messageType\": \"StaticContentMessage\",\n    \"staticContent\": {\n      \"formatType\": \"Text\",\n      \"text\": \"How are you?\"\n    }\n  },\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"isNewMessagingSession\": false\n}\n\n ```\n\n### Response\n\nUpon a successful request, the API will return a response with the following structure:\n\n- **Status Code:** 202 Accepted\n    \n- **Content-Type:** application/json\n    \n- **Response Body:** Contains an array of conversation entries.\n    \n    - **conversationEntries** (array): List of entries in the conversation.\n        \n        - **id** (string): Identifier for the conversation entry.\n            \n        - **clientTimestamp** (integer): Timestamp indicating when the entry was created.\n            \n\n#### Example Response\n\n``` json\n{\n  \"conversationEntries\": [\n    {\n      \"id\": \"\",\n      \"clientTimestamp\": 0\n    }\n  ]\n}\n\n ```\n\n### Summary\n\nThis endpoint is essential for sending messages within a conversation. Ensure that the request body adheres to the specified structure to receive a successful response."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Entries",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Message history retrieved (Status 200)\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    try {",
+							"        const responseJson = pm.response.json();",
+							"        ",
+							"        // --- 1. POLLING LOGIC (Keep this from the last script) ---",
+							"        if (responseJson.conversationEntries && responseJson.conversationEntries.length > 0) {",
+							"            // Get the ID of the *last* message",
+							"            const lastEntry = responseJson.conversationEntries[responseJson.conversationEntries.length - 1];",
+							"            pm.environment.set(\"lastSeenEntryId\", lastEntry.id);",
+							"            console.log(\"Last seen message ID saved for next poll:\", lastEntry.id);",
+							"        } else {",
+							"            console.log(\"No new messages found since last poll.\");",
+							"        }",
+							"        ",
+							"        // Define the HTML/CSS for our table",
+							"        let template = `",
+							"            <html>",
+							"            <head>",
+							"                <style>",
+							"                    body { font-family: sans-serif; padding: 10px; }",
+							"                    table { width: 100%; border-collapse: collapse; }",
+							"                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }",
+							"                    th { background-color: #34ec56; }",
+							"                    tr:nth-child(even) { background-color: #f9f9f9; } /* Even row coloring */",
+							"                    tr:nth-child(odd) { background-color: #ffffff; } /* Odd row coloring */",
+							"                    .sender { color: #005A9C; font-weight: bold; }",
+							"                    tr:hover { background-color: #e0f7fa; } /* Added hover effect */",
+							"                </style>",
+							"            </head>",
+							"            <body>",
+							"                <h2>Chat History</h2>",
+							"                <table>",
+							"                    <thead>",
+							"                        <tr>",
+							"                            <th>#</th> <!-- Added row number header -->",
+							"                            <th>Timestamp</th> <!-- Moved Timestamp header here -->",
+							"                            <th>Entry Type</th>",
+							"                            <th>Sender Display Name</th>",
+							"                            <th>Message</th>",
+							"                        </tr>",
+							"                    </thead>",
+							"                    <tbody>",
+							"                        {{table_rows}}",
+							"                    </tbody>",
+							"                </table>",
+							"            </body>",
+							"            </html>",
+							"        `;",
+							"",
+							"        let tableRows = \"\";",
+							"        ",
+							"        if (responseJson.conversationEntries && responseJson.conversationEntries.length > 0) {",
+							"            // Loop through each message and build a table row with numbering",
+							"            responseJson.conversationEntries.forEach((entry, index) => {",
+							"                const rowNumber = index + 1; // Row number starts from 1",
+							"                const timestamp = new Date(entry.transcriptedTimestamp).toLocaleString(); // Convert timestamp to readable format",
+							"",
+							"                // We only care about entries with relevant data",
+							"                if (entry.entryPayload && entry.entryPayload.abstractMessage) {",
+							"                    const entryType = entry.entryType;",
+							"                    const senderDisplayName = entry.senderDisplayName;",
+							"                    const message = entry.entryPayload.abstractMessage.staticContent.text;",
+							"",
+							"                    tableRows += `",
+							"                        <tr>",
+							"                            <td>${rowNumber}</td> <!-- Added row number -->",
+							"                            <td>${timestamp}</td> <!-- Moved timestamp to this column -->",
+							"                            <td>${entryType}</td>",
+							"                            <td class=\"sender\">${senderDisplayName}</td>",
+							"                            <td>${message}</td>",
+							"                        </tr>",
+							"                    `;",
+							"                } else if (entry.entryType === 'RoutingWorkResult' || entry.entryType === 'SessionStatusChanged') {",
+							"                    const entryType = entry.entryType;",
+							"                    const additionalInfo = entry.entryPayload ? JSON.stringify(entry.entryPayload) : 'No additional info';",
+							"",
+							"                    tableRows += `",
+							"                        <tr>",
+							"                            <td>${rowNumber}</td> <!-- Added row number -->",
+							"                            <td>${timestamp}</td> <!-- Moved timestamp to this column -->",
+							"                            <td>${entryType}</td>",
+							"                            <td class=\"sender\">${entry.senderDisplayName}</td>",
+							"                            <td>${additionalInfo}</td>",
+							"                        </tr>",
+							"                    `;",
+							"                }",
+							"            });",
+							"        } else {",
+							"            tableRows = \"<tr><td colspan='5'>No new messages found.</td></tr>\"; // Adjusted colspan",
+							"        }",
+							"",
+							"        // Inject the generated rows into our HTML template",
+							"        template = template.replace(\"{{table_rows}}\", tableRows);",
+							"",
+							"        // Set the template for the 'Visualize' tab",
+							"        pm.visualizer.set(template);",
+							"",
+							"    } catch (e) {",
+							"        console.error(\"Failed to parse JSON or render visualizer:\", e);",
+							"    }",
+							"} else {",
+							"    console.error(\"Failed to fetch messages. Check response body.\");",
+							"}",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/entries",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation",
+						"{{conversationId}}",
+						"entries"
+					]
+				},
+				"description": "## Get Conversation Entries\n\nThis endpoint retrieves the entries of a specific conversation identified by `conversationId`. The request is made using an HTTP GET method.\n\n### Request Parameters\n\n- `conversationId` (path parameter): The unique identifier for the conversation whose entries are being fetched.\n    \n\n### Response\n\nOn a successful request, the response will return a JSON object containing an array of conversation entries.\n\n#### Response Structure\n\n- `conversationEntries` (array): A list of entries associated with the conversation, where each entry includes:\n    \n    - `entryType` (string): The type of the entry.\n        \n    - `entryPayload` (object): Contains detailed information about the entry, including:\n        \n        - `id` (string): Unique identifier for the entry.\n            \n        - `abstractMessage` (object): Represents the message details, including:\n            \n            - `messageType` (string): Type of the message.\n                \n            - `inReplyToMessageId` (string|null): Identifier for the message this entry is replying to.\n                \n            - `customHandlingType` (string|null): Custom handling type for the message.\n                \n            - `references` (array): An array of references related to the message.\n                \n            - `staticContent` (object): Contains static content details such as:\n                \n                - `formatType` (string): Format type of the content.\n                    \n                - `text` (string): The textual content of the message.\n                    \n                - `citationContent` (string|null): Citation content if applicable.\n                    \n        - `messageReason` (string|null): Reason for the message.\n            \n        - `wasRevised` (boolean|null): Indicates if the message was revised.\n            \n    - `transcriptedTimestamp` (integer): Timestamp of the entry.\n        \n    - `sender` (object): Details about the sender, including:\n        \n        - `role` (string): Role of the sender.\n            \n        - `subject` (string): Subject of the sender.\n            \n    - `clientTimestamp` (integer): Timestamp from the client.\n        \n    - `identifier` (string): Unique identifier for the entry.\n        \n    - `senderDisplayName` (string): Display name of the sender.\n        \n\n### Visualization\n\nNote that there is a table present in the visualization tab for users to check the visualized response data.\n\nThis endpoint retrieves the entries of a specific conversation identified by the `conversationId`. It provides a structured response containing details about each entry in the conversation, including the type of entry, the payload, sender information, and timestamps.\n\n#### Request\n\n- **Method**: GET\n    \n- **URL**: `{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/entries`\n    \n- **Path Parameters**:\n    \n    - `conversationId` (string): The unique identifier for the conversation whose entries you want to retrieve.\n        \n\n#### Response\n\n- **Status Code**: 200 OK\n    \n- **Content-Type**: application/json\n    \n- {\"conversationEntries\": \\[ { \"entryType\": \"\", \"entryPayload\": { \"entryType\": \"\", \"id\": \"\", \"abstractMessage\": { \"messageType\": \"\", \"inReplyToMessageId\": null, \"customHandlingType\": null, \"id\": \"\", \"references\": \\[\\], \"contentCategory\": null, \"staticContent\": { \"formatType\": \"\", \"text\": \"\", \"citationContent\": null } }, \"messageReason\": null, \"wasRevised\": null }, \"transcriptedTimestamp\": 0, \"sender\": { \"role\": \"\", \"subject\": \"\" }, \"clientTimestamp\": 0, \"identifier\": \"\", \"senderDisplayName\": \"\" }\\]}\n    \n\n#### Example Request\n\n``` http\nGET {{scrt-url}}/iamessage/api/v2/conversation/12345/entries\n\n ```\n\n#### Example Response\n\n``` json\n{\n  \"conversationEntries\": [\n    {\n      \"entryType\": \"message\",\n      \"entryPayload\": {\n        \"entryType\": \"text\",\n        \"id\": \"abc123\",\n        \"abstractMessage\": {\n          \"messageType\": \"text\",\n          \"inReplyToMessageId\": null,\n          \"customHandlingType\": null,\n          \"id\": \"msg1\",\n          \"references\": [],\n          \"contentCategory\": null,\n          \"staticContent\": {\n            \"formatType\": \"plain\",\n            \"text\": \"Hello, how can I help you?\",\n            \"citationContent\": null\n          }\n        },\n        \"messageReason\": null,\n        \"wasRevised\": false\n      },\n      \"transcriptedTimestamp\": 1622547800,\n      \"sender\": {\n        \"role\": \"user\",\n        \"subject\": \"John Doe\"\n      },\n      \"clientTimestamp\": 1622547800,\n      \"identifier\": \"entry1\",\n      \"senderDisplayName\": \"John\"\n    }\n  ]\n}\n\n ```\n\nThis endpoint is essential for applications that need to display the conversation history and manage user interactions effectively."
+			},
+			"response": []
+		},
+		{
+			"name": "Send File",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Script for: \"Send File\" API -> Pre-request Script Tab",
+							"console.log(\"Preparing NEW file upload message...\");",
+							"",
+							"try {",
+							"    // 1. Get required variables from environment",
+							"    const esDeveloperName = pm.environment.get(\"esDeveloperName\");",
+							"    ",
+							"    // (Optional) Get a caption for the file",
+							"    // Testers can set a 'fileCaption' variable in the environment",
+							"    const caption = pm.environment.get(\"fileCaption\") || \"\"; ",
+							"",
+							"    if (!esDeveloperName) {",
+							"        throw new Error(\"Missing 'esDeveloperName' from environment. Run 'Get Token' first.\");",
+							"    }",
+							"",
+							"    // 2. Generate TWO new UUIDs as required by the API",
+							"    const messageId = pm.variables.replaceIn('{{$guid}}'); // ID for the message",
+							"    const fileId = pm.variables.replaceIn('{{$guid}}');    // ID for the file",
+							"",
+							"    // 3. Build the NEW messageEntry object structure",
+							"    const messageEntry = {",
+							"        \"esDeveloperName\": esDeveloperName,",
+							"        \"message\": {",
+							"            \"id\": messageId,",
+							"            \"fileId\": fileId,",
+							"            \"text\": caption  // Sends an optional text caption with the file",
+							"        },",
+							"        \"isNewMessagingSession\": false,",
+							"        \"language\": \"en_US\"",
+							"    };",
+							"",
+							"    // 4. Save this new object as a string",
+							"    // We'll rename the variable for clarity",
+							"    pm.environment.set(\"messageEntry\", JSON.stringify(messageEntry));",
+							"    console.log(\"New messageEntryString prepared and saved:\", JSON.stringify(messageEntry));",
+							"",
+							"} catch (e) {",
+							"    console.error(\"Error in Send File Pre-request Script:\", e.message);",
+							"    throw e; // Stop the request from running",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Tests tab for POST .../file request",
+							"pm.test(\"File upload accepted (Status 202)\", function () {",
+							"    pm.response.to.have.status(202);",
+							"});",
+							"",
+							"if(pm.response.code === 202) {",
+							"    try {",
+							"        const responseJson = pm.response.json();",
+							"",
+							"        if (responseJson.conversationEntries && responseJson.conversationEntries.length > 0) {",
+							"            // This 'id' is the 'fileId' we need for the next step",
+							"            const fileId = responseJson.conversationEntries[0].id;",
+							"",
+							"            pm.environment.set(\"lastUploadedFileId\", fileId);",
+							"            console.log(\"File uploaded successfully. Saved fileId:\", fileId);",
+							"",
+							"        } else {",
+							"            console.error(\"Response did not contain 'conversationEntries'.\");",
+							"        }",
+							"",
+							"    } catch (e) {",
+							"        console.error(\"Failed to parse JSON response:\", e);",
+							"    }",
+							"} else {",
+							"    console.error(\"Failed to upload file. Check response body.\");",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "multipart/form-data"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "messageEntry",
+							"value": "{{messageEntry}}",
+							"contentType": "application/json",
+							"type": "text"
+						},
+						{
+							"key": "fileData",
+							"contentType": "application/octet-stream",
+							"type": "file",
+							"src": "/Users/lbajargaan/Documents/AgentForceAgent.jpeg"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/file",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation",
+						"{{conversationId}}",
+						"file"
+					]
+				},
+				"description": "## API Overview\n\nThis API endpoint allows users to upload a file and send a text message within a specific conversation. It is designed to facilitate the exchange of multimedia messages in a conversation context.\n\n## Request Format\n\n- **URL**: `{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/file`\n    \n- **Method**: `POST`\n    \n- **Content-Type**: `multipart/form-data`\n    \n\n### Request Body Parameters\n\n1. **messageEntry** (type: `text`)\n    \n    - This parameter contains the message details.\n        \n    - { \"type\": \"text\", \"description\": \"\"}\n        \n2. **fileData** (type: `file`)\n    \n    - This parameter is used to upload the file associated with the message.\n        \n    - **Expected Format**:\n        \n        - The file should be included as binary data in the request.\n            \n\n## Response Format\n\n- **Status Code**: `202 Accepted`\n    \n- **Content-Type**: `application/json`\n    \n- { \"conversationEntries\": \\[ { \"id\": \"\", \"clientTimestamp\": 0 } \\]}\n    \n\nThis response indicates that the file upload and message sending process has been accepted for processing.\n\n## Additional Information\n\nEnsure that the `conversationId` is correctly specified in the URL to target the appropriate conversation. The API supports sending both text and file data, making it versatile for various messaging needs."
+			},
+			"response": []
+		},
+		{
+			"name": "Close Conversation",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}"
+					}
+				],
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}?esDeveloperName={{esDeveloperName}}",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation",
+						"{{conversationId}}"
+					],
+					"query": [
+						{
+							"key": "esDeveloperName",
+							"value": "{{esDeveloperName}}"
+						}
+					]
+				},
+				"description": "\n## API Purpose\n\nThis API endpoint is designed to delete a specific conversation within the messaging system. By using the DELETE method, you can remove a conversation identified by its unique `conversationId`. \n\n### Main Functionalities\n- **Delete Conversation**: This endpoint allows developers to programmatically delete a conversation, which can be useful for managing user interactions, cleaning up inactive conversations, or enforcing data retention policies.\n- **Developer Identification**: The `esDeveloperName` query parameter is included to identify the developer making the request, ensuring that only authorized actions are performed on the conversations.\n\n### Request Parameters\n- **conversationId**: The unique identifier for the conversation that you wish to delete.\n- **esDeveloperName**: The name of the developer making the request, used for tracking and authorization purposes.\n\n### Example Request\n```\nDELETE {{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}?esDeveloperName={{esDeveloperName}}\n```\n"
+			},
+			"response": []
+		}
+	]
+}
