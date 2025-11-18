@@ -1,11 +1,11 @@
 {
 	"info": {
-		"_postman_id": "cb140383-df4a-4baa-b58f-c46007377809",
+		"_postman_id": "712df061-21fc-4254-b449-a04fc5073fc2",
 		"name": "Enhanced Chat API",
 		"description": "This collection provides a complete workflow for testing and interacting with the [Salesforce Enhanced Chat API](https://developer.salesforce.com/docs/service/messaging-api/overview). It handles guest authentication, creates a conversation, sends/receives messages, and uploads files.\n\n**Crucial Setup:** Before starting, set up a Postman Environment variables with your Salesforce credentials:\n\n- `{{orgId}}`: Your 15-character Salesforce Org ID.\n    \n- `{{esDeveloperName}}`: The API name of your Embedded Service Deployment.\n    \n- `{{scrt-url}}`: The unique base URL from your Salesforce snippet.\n    \n\nAnd make sure your collection is using the correct environment variable set. Refer to the screenshot below:\n\n<img src=\"https://content.pstmn.io/7cb12f1c-98ec-4ea3-9b59-97ceb674de40/U2NyZWVuc2hvdCAyMDI1LTExLTA2IGF0IDYuNDguNTHigK9BTS5wbmc=\" width=\"616\" height=\"483\">\n\nTo run the test after you have set the initial variables, please follow:\n\n1. **Get Token** for Unauthenticated Chat Session\n    \n2. Subscribe to **SSE Connect** (if you want)\n    \n3. **Create Conversation** This will create a messaging session in your org.\n    \n4. **Send a message**.\n    \n    1. Make sure to type your own message in body:  \n        `\"staticContent\": { \"formatType\": \"Text\", \"text\": \"YOUR MESSAGE\" }`\n        \n5. **Get Messaging Session / Conversation Entries** This request has a Chat History UI under Visualization Tab for easy readable view:\n    \n\n<img src=\"https://content.pstmn.io/22b4b20f-3bc8-4ebd-921b-8ab1a4205cc5/U2NyZWVuc2hvdCAyMDI1LTExLTA2IGF0IDYuNTYuMDPigK9BTS5wbmc=\">\n\n6\\. **Send File** -> To send a file follow the steps:\n\n- Upload the file in Body's File row\n    \n- Set the Environment variable - \"fileUpload_Name\" with your exact file name with extension.\n    \n\n7\\. **Close the Conversation** from EndUser side.\n\nFor More information please refer to the [official documentation](https://developer.salesforce.com/docs/service/messaging-api/overview).\n\nFor any changes or explanation or suggestions, please reach out to Lakshay Bajargaan.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "15020437",
-		"_collection_link": "https://digital-engagement-amer.postman.co/workspace/Team-Workspace~d226ceca-c1ed-4c25-8a5f-b5a577e0d0b7/collection/15020437-cb140383-df4a-4baa-b58f-c46007377809?action=share&source=collection_link&creator=15020437"
+		"_collection_link": "https://digital-engagement-amer.postman.co/workspace/Enhanced-Chat-%252FMIAW-API~fd29f513-2978-4f0b-83d5-55ef4d842af6/collection/15020437-712df061-21fc-4254-b449-a04fc5073fc2?action=share&source=collection_link&creator=15020437"
 	},
 	"item": [
 		{
@@ -67,8 +67,7 @@
 							"}"
 						],
 						"type": "text/javascript",
-						"packages": {},
-						"requests": {}
+						"packages": {}
 					}
 				}
 			],
@@ -82,7 +81,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"orgId\": \"{{orgId}}\",\n    \"esDeveloperName\": \"{{esDeveloperName}}\",\n    \"capabilitiesVersion\": \"63\",\n    \"platform\": \"Web\",\n    \"deviceId\": null,\n    \"context\": {\n        \"appName\": \"com_acme_sales\",\n        \"clientVersion\": \"1.2.3\"\n    },\n    \"authorizationType\": \"JWT\",\n    \"customerIdentityToken\": \"{{YOUR_JWT-Token}}\"\n}",
+					"raw": "{\n  \"orgId\": \"{{orgId}}\",\n  \"esDeveloperName\": \"{{esDeveloperName}}\",\n  \"capabilitiesVersion\": \"63\",\n  \"platform\": \"Web\",\n  \"deviceId\": null,\n  \"context\": {\n    \"appName\": \"com_acme_sales\",\n    \"clientVersion\": \"1.2.3\"\n  },\n  \"authorizationType\": \"JWT\",\n  \"customerIdentityToken\": \"{{YOUR_JWT-Token}}\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -511,6 +510,48 @@
 			"response": []
 		},
 		{
+			"name": "Send Receipts Delivery/Read Ack Receipts",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"acks\": [\n    {\n      \"id\": \"{{$guid}}\",\n      \"entryType\": \"Read\",\n      \"conversationEntryId\": \"{{conversationId}}\"\n    }\n  ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/acknowledge-entries",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation",
+						"{{conversationId}}",
+						"acknowledge-entries"
+					]
+				},
+				"description": "Generated from cURL: curl \"https://{scrt-url}/iamessage/api/v2/conversation/{conversationId}/acknowledge-entries\" \\\n  -X POST \\\n  -H \"content-type: application/json\" \\\n  -d '{\n  \"acks\": [\n    {\n      \"id\": \"b2104971-42a5-47d3-8d82-1a1118fa2af3\",\n      \"entryType\": \"Delivery\",\n      \"conversationEntryId\": \"1c896056-3ecc-44f9-96fa-4a64c77b17e2\"\n    }\n  ]\n}'"
+			},
+			"response": []
+		},
+		{
 			"name": "Get Entries",
 			"event": [
 				{
@@ -674,6 +715,34 @@
 			"response": []
 		},
 		{
+			"name": "List Conversations",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation/list",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation",
+						"list"
+					]
+				},
+				"description": "Generated from cURL: curl \"https://{scrt-url}/iamessage/api/v2/conversation/list\""
+			},
+			"response": []
+		},
+		{
 			"name": "Send File",
 			"event": [
 				{
@@ -806,6 +875,41 @@
 					]
 				},
 				"description": "## API Overview\n\nThis API endpoint allows users to upload a file and send a text message within a specific conversation. It is designed to facilitate the exchange of multimedia messages in a conversation context.\n\n## Request Format\n\n- **URL**: `{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/file`\n    \n- **Method**: `POST`\n    \n- **Content-Type**: `multipart/form-data`\n    \n\n### Request Body Parameters\n\n1. **messageEntry** (type: `text`)\n    \n    - This parameter contains the message details.\n        \n    - { \"type\": \"text\", \"description\": \"\"}\n        \n2. **fileData** (type: `file`)\n    \n    - This parameter is used to upload the file associated with the message.\n        \n    - **Expected Format**:\n        \n        - The file should be included as binary data in the request.\n            \n\n## Response Format\n\n- **Status Code**: `202 Accepted`\n    \n- **Content-Type**: `application/json`\n    \n- { \"conversationEntries\": \\[ { \"id\": \"\", \"clientTimestamp\": 0 } \\]}\n    \n\nThis response indicates that the file upload and message sending process has been accepted for processing.\n\n## Additional Information\n\nEnsure that the `conversationId` is correctly specified in the URL to target the appropriate conversation. The API supports sending both text and file data, making it versatile for various messaging needs."
+			},
+			"response": []
+		},
+		{
+			"name": "Retrieve Conversation",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{scrt-url}}/iamessage/api/v2/conversation/{{conversationId}}/transcript?esDeveloperName={{esDeveloperName}}",
+					"host": [
+						"{{scrt-url}}"
+					],
+					"path": [
+						"iamessage",
+						"api",
+						"v2",
+						"conversation",
+						"{{conversationId}}",
+						"transcript"
+					],
+					"query": [
+						{
+							"key": "esDeveloperName",
+							"value": "{{esDeveloperName}}"
+						}
+					]
+				},
+				"description": "Generated from cURL: curl \"https://{scrt-url}/iamessage/api/v2/conversation/{conversationId}/transcript\""
 			},
 			"response": []
 		},
